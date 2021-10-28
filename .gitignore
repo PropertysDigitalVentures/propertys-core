@@ -1,0 +1,20 @@
+node_modules
+
+#Hardhat files
+cache
+artifacts
+examples
+
+.env
+assets
+
+*.csv
+
+flattened
+
+# Ignore Data Files
+data
+
+# Whitelist Mock-Clans
+!data/mock-clans-bytes.json
+!data/mock-clans.json
