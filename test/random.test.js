@@ -43,24 +43,24 @@ describe("Random", function () {
     testArray = await random.getTestArray();
     console.log("🚀 | testArray", testArray);
 
-    await (await random.pushTestArray(3)).wait();
-    testArray = await random.getTestArray();
-    console.log("🚀 | testArray", testArray);
+    // await (await random.pushTestArray(3)).wait();
+    // testArray = await random.getTestArray();
+    // console.log("🚀 | testArray", testArray);
 
-    await (await random.pushMultipleTestArray([3])).wait();
-    testArray = await random.getTestArray();
-    console.log("🚀 | testArray", testArray);
+    // await (await random.pushMultipleTestArray([3])).wait();
+    // testArray = await random.getTestArray();
+    // console.log("🚀 | testArray", testArray);
 
-    await (await random.pushMultipleTestArray([3, 3, 3, 3, 3, 3, 3])).wait();
-    testArray = await random.getTestArray();
-    console.log("🚀 | testArray", testArray);
+    // await (await random.pushMultipleTestArray([3, 3, 3, 3, 3, 3, 3])).wait();
+    // testArray = await random.getTestArray();
+    // console.log("🚀 | testArray", testArray);
 
-    await (
-      await random.pushMultipleTestArray([
-        5, 5, 5, 5, 5, 5, 5, 1, 2, 3, 3, 12, 2, 1, 1, 1,
-      ])
-    ).wait();
-    testArray = await random.getTestArray();
-    console.log("🚀 | testArray", testArray);
+    // await (
+    //   await random.pushMultipleTestArray([
+    //     5, 5, 5, 5, 5, 5, 5, 1, 2, 3, 3, 12, 2, 1, 1, 1,
+    //   ])
+    // ).wait();
+    // testArray = await random.getTestArray();
+    // console.log("🚀 | testArray", testArray);
   });
 });

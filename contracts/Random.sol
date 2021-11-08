@@ -6,38 +6,7 @@ contract Random {
     uint256 public cap = 6000;
     uint256 public seed;
 
-    uint256[] public testArray = [
-        1,
-        2,
-        3,
-        4,
-        5,
-        1,
-        2,
-        3,
-        4,
-        5,
-        1,
-        2,
-        3,
-        4,
-        5,
-        1,
-        2,
-        3,
-        4,
-        5,
-        1,
-        2,
-        3,
-        4,
-        5,
-        1,
-        2,
-        3,
-        4,
-        5
-    ];
+    uint256[] public testArray = [1, 2, 3, 4, 5];
 
     constructor() {
         // seed = 123;
