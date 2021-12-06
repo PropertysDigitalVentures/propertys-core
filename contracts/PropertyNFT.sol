@@ -47,13 +47,13 @@ contract PropertyNFT is
     // Wallet Restrictions
     uint8 public constant MAX_QUANTITY = 8; // maximum number of mint per transaction
     uint8 public constant WALLET_LIMIT_PUBLIC = 16; // to change
-    mapping(address => uint256) public totalOwned; // Total number of PROPERTY owned;
+    
     mapping(address => Whitelist) public whitelistedAddresses; // PROPERTY AGENTS
     mapping(address => bool) public whitelistedPartners;
 
     // Sales Timings
     uint256 public PRIVATE_SALE_START;
-    uint256 public PRIVATE_SALE_WINDOW;
+    
     uint256 public PUBLIC_SALE_START;
 
     // Treasury Address
@@ -70,12 +70,10 @@ contract PropertyNFT is
 
     // PRIVATE VARIABLES
     mapping(address => uint8) private publicAddressMintedAmount; // number of NFT minted for each wallet during public sale
-    mapping(bytes => uint256) private postalCodeUint; // Maps postal code to token id
-    mapping(uint256 => bytes) private postalCodeBytes;
 
     uint32[] private available;
 
-    uint256 private _currentTokenID;
+    
 
     RandomLib.Random internal random;
 
@@ -97,7 +95,6 @@ contract PropertyNFT is
         address _owner,
         address _treasury,
         uint256 _privateSaleStart,
-        uint256 _privateSaleWindow,
         uint256 _publicSaleStart,
         address _vrfCoordinator,
         address _link,
@@ -180,14 +177,14 @@ contract PropertyNFT is
         // Reduce Cap
         whitelist.cap -= _mintAmount;
 
-        for (uint256 i = 1; i <= _mintAmount; i++) {
+        for (uint256 i; i < _mintAmount; i++) {
             _mintRandom(msg.sender);
         }
     }
 
     /// @dev partner Mint
     function partnerMint() public payable onlyEOA whenNotPaused {
-        // require(isPresaleOpen(), "PropertyNFT: Presale Mint not open!");
+        require(isPresaleOpen(), "PropertyNFT: Presale Mint not open!");
         require(
             whitelistedPartners[msg.sender],
             "PropertyNFT: You do not have whitelist mints!"
@@ -206,7 +203,7 @@ contract PropertyNFT is
         require(success, "PropertyNFT: Unable to forward message to treasury!");
 
         // Remove from Partner Whitelist
-        whitelistedPartners[msg.sender] == false;
+        whitelistedPartners[msg.sender] = false;
         _mintRandom(msg.sender);
     }
 
@@ -217,10 +214,10 @@ contract PropertyNFT is
         onlyEOA
         whenNotPaused
     {
-        // require(
-        //     (isPublicSaleOpen()),
-        //     "PropertyNFT: Public sale has not started!"
-        // );
+        require(
+            (isPublicSaleOpen()),
+            "PropertyNFT: Public sale has not started!"
+        );
         require(
             publicAddressMintedAmount[msg.sender] + _mintAmount <=
                 WALLET_LIMIT_PUBLIC,
@@ -268,7 +265,7 @@ contract PropertyNFT is
     function isPresaleOpen() public view returns (bool) {
         return
             block.timestamp >= PRIVATE_SALE_START &&
-            block.timestamp < (PRIVATE_SALE_START + PRIVATE_SALE_WINDOW);
+            block.timestamp < PUBLIC_SALE_START;
     }
 
     /// @dev Check if Public Sale is Open
@@ -285,6 +282,15 @@ contract PropertyNFT is
         return whitelistedAddresses[_user];
     }
 
+    /// @dev Check if user is partnership whitelisted
+    function checkPartnershipWhitelist(address _user)
+        public
+        view
+        returns (bool)
+    {
+        return whitelistedPartners[_user];
+    }
+
     /// @dev Get Whitelist Price
     function getWhitelistPrice(address user) public view returns (uint256) {
         if (whitelistedAddresses[user].tier > 0) {
@@ -295,27 +301,24 @@ contract PropertyNFT is
     }
 
     // ------------------ PURE FUNCTIONS ------------------------
+    /// @dev Parse Bytes postal code form into array
     function parsePostalCode(bytes memory postalCode)
         public
         pure
         returns (uint8[4] memory)
     {
         return [
-            uint8(postalCode[0]), // City
-            uint8(postalCode[1]), // District
-            uint8(postalCode[2]), // Street
-            uint8(postalCode[3]) // House
+            uint8(postalCode[0]),
+            uint8(postalCode[1]),
+            uint8(postalCode[2]),
+            uint8(postalCode[3])
         ];
     }
 
+    /// @dev Parse token id into bytes form
     function getPostalCode(uint32 tokenId) public pure returns (bytes memory) {
         return abi.encodePacked(tokenId);
     }
-
-    function getAvailable() public view returns (uint32[] memory) {
-        return available;
-    }
-
     // ------------------ INTERNAL FUNCTIONS ------------------------
 
     /// @dev Sets baseURI
@@ -349,6 +352,7 @@ contract PropertyNFT is
         return requestRandomness(keyHash, fee);
     }
 
+    /// @dev Callback function for Chainlink VRF
     function fulfillRandomness(bytes32 requestId, uint256 randomness)
         internal
         override
@@ -396,7 +400,7 @@ contract PropertyNFT is
         _unpause();
     }
 
-    function reveal() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function _reveal() internal {
         revealed = true;
     }
 
@@ -404,6 +408,7 @@ contract PropertyNFT is
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        _reveal();
         _setBaseURI(_newBaseURI);
     }
 
@@ -431,6 +436,22 @@ contract PropertyNFT is
     function withdrawToTreasury() public onlyRole(DEFAULT_ADMIN_ROLE) {
         (bool success, ) = TREASURY.call{value: address(this).balance}("");
         require(success);
+    }
+
+    /// @dev Updates presale Start Time
+    function updatePresaleStart(uint256 _startTime)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        PRIVATE_SALE_START = _startTime;
+    }
+
+    /// @dev Emergency Function to withdraw ETH from this contract
+    function updatePublicSaleStart(uint256 _startTime)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        PUBLIC_SALE_START = _startTime;
     }
 
     // -------------------------- INTERNAL OVERRIDES -----------------------------
