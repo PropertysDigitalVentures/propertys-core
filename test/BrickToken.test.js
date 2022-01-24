@@ -13,12 +13,12 @@ require("dotenv").config();
 describe("Brick Token", function () {
   let owner, treasury, alice, bob;
   let provider;
-  let uninterestedUnicorns;
+  let propertyNFT;
   let brickToken;
   let clans;
 
   before(async function () {
-    // Get Fixture of Questing and Uninterested Unicorns
+    // Get Fixture of Questing and
     await deployments.fixture(["BrickToken"]);
 
     [owner, treasury, alice, bob] = await ethers.getSigners();

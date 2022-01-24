@@ -12,12 +12,12 @@ require("dotenv").config();
 
 describe("Random", function () {
   let owner, treasury, alice, bob;
-  let uninterestedUnicorns;
+  let propertyNFT;
   let random;
   let clans;
 
   before(async function () {
-    // Get Fixture of Questing and Uninterested Unicorns
+    // Get Fixture of Questing and
     await deployments.fixture(["Random"]);
 
     random = await ethers.getContract("Random");

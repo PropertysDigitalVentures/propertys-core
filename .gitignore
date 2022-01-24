@@ -14,7 +14,12 @@ flattened
 
 # Ignore Data Files
 data
+generated
 
 # Whitelist Mock-Clans
 !data/mock-clans-bytes.json
 !data/mock-clans.json
+
+.vscode
+
+deployments/localhost

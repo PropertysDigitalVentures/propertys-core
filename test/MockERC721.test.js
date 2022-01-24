@@ -14,7 +14,7 @@ describe("MockERC721", function () {
   let mockERC721;
 
   before(async function () {
-    // Get Fixture of Questing and Uninterested Unicorns
+    // Get Fixture of Questing and
     await deployments.fixture(["MockERC721"]);
     [owner, treasury, alice, bob] = await ethers.getSigners();
     mockERC721 = await ethers.getContract("MockERC721", owner);

@@ -15,6 +15,8 @@ import "./VRFConsumerBaseUpgradeable.sol";
 
 import "./libraries/RandomLib.sol";
 
+import "./interfaces/IPostalCodeProvider.sol";
+
 contract PropertyNFT is
     AccessControlEnumerableUpgradeable,
     PausableUpgradeable,
@@ -72,8 +74,10 @@ contract PropertyNFT is
 
     RandomLib.Random internal random;
 
+    IPostalCodeProvider internal POSTAL_CODE_PROVIDER;
+
     // Reserve Storage
-    uint256[50] private ______gap;
+    uint256[49] private ______gap;
 
     // ---------------------- MODIFIERS ---------------------------
 
@@ -130,13 +134,18 @@ contract PropertyNFT is
 
         string memory currentBaseURI = _baseURI();
 
+        uint256 mappedtokenId = POSTAL_CODE_PROVIDER.getTokenId(tokenId);
+
         if (!revealed) {
             return notRevealedURI;
         } else {
             return
                 bytes(currentBaseURI).length > 0
                     ? string(
-                        abi.encodePacked(currentBaseURI, tokenId.toString())
+                        abi.encodePacked(
+                            currentBaseURI,
+                            mappedtokenId.toString()
+                        )
                     )
                     : "";
         }
@@ -284,6 +293,21 @@ contract PropertyNFT is
         return tokenIds;
     }
 
+    function walletOfOwnerShuffled(address _owner)
+        public
+        view
+        returns (uint32[] memory)
+    {
+        uint256 ownerTokenCount = balanceOf(_owner);
+        uint32[] memory tokenIds = new uint32[](ownerTokenCount);
+        for (uint256 i; i < ownerTokenCount; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i);
+            uint256 shuffledTokenId = POSTAL_CODE_PROVIDER.getTokenId(tokenId);
+            tokenIds[i] = uint32(shuffledTokenId);
+        }
+        return tokenIds;
+    }
+
     /// @dev Check if Presale is Open
     function isPresaleOpen() public view returns (bool) {
         return
@@ -317,8 +341,9 @@ contract PropertyNFT is
     }
 
     /// @dev Parse token id into bytes form
-    function getPostalCode(uint32 tokenId) public pure returns (bytes memory) {
-        return abi.encodePacked(tokenId);
+    function getPostalCode(uint256 tokenId) public view returns (bytes memory) {
+        uint256 _tokenId = POSTAL_CODE_PROVIDER.getTokenId(tokenId);
+        return abi.encodePacked(uint32(_tokenId));
     }
 
     // ------------------ INTERNAL FUNCTIONS ------------------------
@@ -425,6 +450,14 @@ contract PropertyNFT is
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         PUBLIC_SALE_START = _startTime;
+    }
+
+    /// @dev Set PostalCodeProvider
+    function setPostalCodeProvider(address postalCodeProviderAddress)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        POSTAL_CODE_PROVIDER = IPostalCodeProvider(postalCodeProviderAddress);
     }
 
     // -------------------------- INTERNAL FUNCTIONS -----------------------------

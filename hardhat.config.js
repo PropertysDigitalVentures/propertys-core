@@ -2,24 +2,13 @@ const { task } = require("hardhat/config");
 
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require("@nomiclabs/hardhat-ethers");
 require("hardhat-gas-reporter");
 require("hardhat-deploy");
 
 const { time } = require("@openzeppelin/test-helpers");
 
 require("dotenv").config();
-const ALCHEMY_PROVIDER_MAINNET = process.env.ALCHEMY_PROVIDER_MAINNET;
-const ALCHEMY_PROVIDER_KOVAN = process.env.ALCHEMY_PROVIDER_KOVAN;
-const INFURA_PROVIDER_MAINNET = process.env.INFURA_PROVIDER_MAINNET;
-const INFURA_PROVIDER_KOVAN = process.env.INFURA_PROVIDER_KOVAN;
-const INFURA_PROVIDER_RINKEBY = process.env.INFURA_PROVIDER_RINKEBY;
-const INFURA_PROVIDER_MATIC = process.env.INFURA_PROVIDER_MATIC;
-const INFURA_PROVIDER_MUMBAI = process.env.INFURA_PROVIDER_MUMBAI;
-const UU_PRIVATE_KEY = process.env.UU_PRIVATE_KEY;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const PRIVATE_KEY_TEST = process.env.PRIVATE_KEY_TEST;
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -95,8 +84,8 @@ module.exports = {
     },
     hardhat: {
       // forking: {
-      //   url: ALCHEMY_PROVIDER_MAINNET,
-      //   blockNumber: 13341325, // to replace with pause block number
+      //   url: process.env.ALCHEMY_PROVIDER_MAINNET,
+      //   blockNumber: 13782800,
       // },
       // gasPrice: 100000000000,
       // blockGasLimit: 30000000000,
@@ -108,12 +97,11 @@ module.exports = {
         auto: true,
         // interval: 0,
       },
+      timeout: 60000,
     },
     mainnet: {
       url: process.env.INFURA_PROVIDER_MAINNET,
       chainId: 1,
-      // maxFeePerGas: 100000000000,
-      // maxPriorityFeePerGas: 3000000000,
       // mnemonic: process.env.MNEMONIC,
       accounts: [process.env.PRIVATE_KEY],
     },
@@ -123,15 +111,15 @@ module.exports = {
       maxFeePerGas: 100000000000,
       maxPriorityFeePerGas: 2000000000,
       // mnemonic: process.env.MNEMONIC,
-      accounts: [process.env.PRIVATE_KEY_TEST],
+      accounts: [process.env.PRIVATE_KEY],
     },
     rinkeby: {
       url: process.env.INFURA_PROVIDER_RINKEBY,
       chainId: 4,
-      maxFeePerGas: 80000000000,
-      maxPriorityFeePerGas: 1000000000,
+      // maxFeePerGas: 80000000000,
+      // maxPriorityFeePerGas: 1000000000,
       // mnemonic: process.env.MNEMONIC,
-      accounts: [process.env.PRIVATE_KEY_TEST],
+      accounts: [process.env.PRIVATE_KEY],
     },
     matic: {
       url: process.env.INFURA_PROVIDER_MATIC,
@@ -141,7 +129,7 @@ module.exports = {
       // maxPriorityFeePerGas: 2000000000,
       // gasPrice: "auto",
       // mnemonic: process.env.MNEMONIC,
-      accounts: [process.env.PRIVATE_KEY_TEST],
+      accounts: [process.env.PRIVATE_KEY],
     },
     mumbai: {
       url: process.env.INFURA_PROVIDER_MUMBAI,
@@ -151,7 +139,7 @@ module.exports = {
       // maxPriorityFeePerGas: 2000000000,
 
       // mnemonic: process.env.MNEMONIC,
-      accounts: [process.env.PRIVATE_KEY_TEST],
+      accounts: [process.env.PRIVATE_KEY],
     },
   },
   solidity: {
@@ -226,6 +214,6 @@ module.exports = {
     deploy: "./deploy",
   },
   mocha: {
-    timeout: 2000000000,
+    timeout: 20000000000,
   },
 };

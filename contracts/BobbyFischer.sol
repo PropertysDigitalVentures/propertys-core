@@ -34,6 +34,7 @@ contract BobbyFischer is
 
     // Max Supply
     uint256 public constant MAX_SUPPLY = 6000;
+    uint256 public constant RESERVED = 200;
 
     // Mint Prices
     uint256 public constant LAUNCH_PRICE = 0.09 ether;
@@ -43,7 +44,6 @@ contract BobbyFischer is
     // Wallet Restrictions
     uint8 public constant MAX_QUANTITY = 8; // maximum number of mint per transaction
     uint8 public constant WALLET_LIMIT_PUBLIC = 16; // to change
-    mapping(address => Whitelist) public whitelistedAddresses; // PROPERTY AGENTS
     mapping(address => bool) public whitelistedPartners;
 
     // Sales Timings
@@ -63,7 +63,10 @@ contract BobbyFischer is
     uint256 internal fee;
 
     // PRIVATE VARIABLES
-    mapping(address => uint8) private publicAddressMintedAmount; // number of NFT minted for each wallet during public sale
+    mapping(address => uint8) private publicSaleMintedAmount; // number of NFT minted for each wallet during public sale
+    mapping(address => uint8) private privateSaleMintedAmount;
+    mapping(bytes => bool) private _nonceUsed; // nonce was used to mint already
+    address private signerAddress;
 
     uint32[] private available;
 
@@ -91,12 +94,13 @@ contract BobbyFischer is
         address _vrfCoordinator,
         address _link,
         bytes32 _keyHash,
-        uint256 _fee
+        uint256 _fee,
+        address _signerAddress
     ) public initializer {
         __AccessControlEnumerable_init();
         __Ownable_init();
         __Pausable_init();
-        __ERC721_init_unchained("BobbyFischer", "BF");
+        __ERC721_init_unchained("BobbyFischer", "BB");
         __ERC721Enumerable_init();
         __VRFConsumableBase_init(_vrfCoordinator, _link);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -108,6 +112,7 @@ contract BobbyFischer is
         PRIVATE_SALE_PRICES = [0.08 ether, 0.0725 ether, 0.065 ether];
         keyHash = _keyHash;
         fee = _fee;
+        signerAddress = _signerAddress;
         transferOwnership(_owner);
     }
 
@@ -140,21 +145,35 @@ contract BobbyFischer is
     // -------------------------- PUBLIC FUNCTIONS ----------------------------
 
     /// @dev Presale Mint
-    function presaleMint(uint8 _mintAmount)
-        public
-        payable
-        onlyEOA
-        whenNotPaused
-    {
-        Whitelist storage whitelist = whitelistedAddresses[msg.sender];
+    function presaleMint(
+        uint8 _mintAmount,
+        uint8 tier,
+        bytes memory nonce,
+        bytes memory signature
+    ) public payable onlyEOA whenNotPaused {
         require(isPresaleOpen(), "BobbyFischer: Presale Mint not open!");
+        require(!_nonceUsed[nonce], "BobbyFischer: Nonce was used");
         require(
-            _mintAmount <= whitelist.cap,
-            "BobbyFischer: Presale limit exceeded!"
+            isSignedBySigner(
+                msg.sender,
+                nonce,
+                signature,
+                signerAddress,
+                _mintAmount,
+                tier
+            ),
+            "BobbyFischer: Invalid signature"
         );
-        require(whitelist.tier > 0, "BobbyFischer: Not Whitelisted!");
+        require(tier > 0, "BobbyFischer: Whitelist Tier < 1.");
+        require(tier <= 3, "BobbyFischer: Whitelist Tier > 3.");
+
         require(
-            msg.value == PRIVATE_SALE_PRICES[whitelist.tier - 1] * _mintAmount,
+            privateSaleMintedAmount[msg.sender] + _mintAmount <= tier,
+            "BobbyFischer: Presale Limit Exceeded!"
+        );
+
+        require(
+            msg.value == PRIVATE_SALE_PRICES[tier - 1] * _mintAmount,
             "BobbyFischer: Insufficient ETH!"
         );
         require(
@@ -168,20 +187,28 @@ contract BobbyFischer is
             "BobbyFischer: Unable to forward message to treasury!"
         );
 
-        // Reduce Cap
-        whitelist.cap -= _mintAmount;
-
-        for (uint256 i; i < _mintAmount; i++) {
+        for (uint256 i = 0; i < _mintAmount; i++) {
+            privateSaleMintedAmount[msg.sender]++;
             _mintRandom(msg.sender);
         }
     }
 
     /// @dev partner Mint
-    function partnerMint() public payable onlyEOA whenNotPaused {
+    function partnerMint(bytes memory nonce, bytes memory signature)
+        public
+        payable
+        onlyEOA
+        whenNotPaused
+    {
         require(isPresaleOpen(), "BobbyFischer: Presale Mint not open!");
+        require(!_nonceUsed[nonce], "BobbyFischer: Nonce was used");
         require(
-            whitelistedPartners[msg.sender],
-            "BobbyFischer: You do not have whitelist mints!"
+            isSignedBySigner(msg.sender, nonce, signature, signerAddress, 0, 0),
+            "BobbyFischer: Invalid signature"
+        );
+        require(
+            whitelistedPartners[msg.sender] == false,
+            "BobbyFischer: You have already minted!"
         );
 
         require(
@@ -199,8 +226,8 @@ contract BobbyFischer is
             "BobbyFischer: Unable to forward message to treasury!"
         );
 
-        // Remove from Partner Whitelist
-        whitelistedPartners[msg.sender] = false;
+        // Update whitelisted partner mint
+        whitelistedPartners[msg.sender] = true;
         _mintRandom(msg.sender);
     }
 
@@ -216,7 +243,7 @@ contract BobbyFischer is
             "BobbyFischer: Public sale has not started!"
         );
         require(
-            publicAddressMintedAmount[msg.sender] + _mintAmount <=
+            publicSaleMintedAmount[msg.sender] + _mintAmount <=
                 WALLET_LIMIT_PUBLIC,
             "BobbyFischer: Maximum amount of mints exceeded!"
         );
@@ -225,7 +252,7 @@ contract BobbyFischer is
             "BobbyFischer: Maximum mint amount per transaction exceeded!"
         );
         require(
-            totalSupply() + _mintAmount <= MAX_SUPPLY,
+            totalSupply() + _mintAmount <= MAX_SUPPLY - RESERVED,
             "BobbyFischer: Maximum Supply Reached!"
         );
         require(
@@ -239,7 +266,7 @@ contract BobbyFischer is
             "BobbyFischer: Unable to forward message to treasury!"
         );
 
-        publicAddressMintedAmount[msg.sender] += _mintAmount;
+        publicSaleMintedAmount[msg.sender] += _mintAmount;
 
         for (uint256 i; i < _mintAmount; i++) {
             _mintRandom(msg.sender);
@@ -247,6 +274,11 @@ contract BobbyFischer is
     }
 
     // ----------------- VIEW FUNCTIONS ------------------------
+
+    /// @dev Returns mint count during private sale
+    function privateSaleMintCount(address user) public view returns (uint256) {
+        return privateSaleMintedAmount[user];
+    }
 
     function walletOfOwner(address _owner)
         public
@@ -273,35 +305,13 @@ contract BobbyFischer is
         return block.timestamp >= PUBLIC_SALE_START;
     }
 
-    /// @dev Check if user is whitelisted
-    function checkWhitelist(address _user)
-        public
-        view
-        returns (Whitelist memory)
-    {
-        return whitelistedAddresses[_user];
-    }
-
-    /// @dev Check if user is partnership whitelisted
-    function checkPartnershipWhitelist(address _user)
-        public
-        view
-        returns (bool)
-    {
-        return whitelistedPartners[_user];
-    }
-
     /// @dev Get Whitelist Price
-    function getWhitelistPrice(address user) public view returns (uint256) {
-        if (whitelistedAddresses[user].tier > 0) {
-            return PRIVATE_SALE_PRICES[whitelistedAddresses[user].tier - 1];
-        } else {
-            return LAUNCH_PRICE;
-        }
+    function getWhitelistPrice(uint8 tier) public view returns (uint256) {
+        return PRIVATE_SALE_PRICES[tier - 1];
     }
 
     // ------------------ PURE FUNCTIONS ------------------------
-    /// @dev Parse Bytes postal code form into array
+    /// @dev Parse postal code
     function parsePostalCode(bytes memory postalCode)
         public
         pure
@@ -315,7 +325,7 @@ contract BobbyFischer is
         ];
     }
 
-    /// @dev Parse token id into bytes form
+    /// @dev Parse token id
     function getPostalCode(uint32 tokenId) public pure returns (bytes memory) {
         return abi.encodePacked(tokenId);
     }
@@ -384,10 +394,13 @@ contract BobbyFischer is
         }
     }
 
-    /// @dev Reserve some NFTS by postalcode
-    function reserve(uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i; i < amount; i++) {
-            _mintRandom(msg.sender);
+    /// @dev Reserve some NFTS
+    function airdrop(address[] memory addressList)
+        public
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        for (uint256 i; i < addressList.length; i++) {
+            _mintRandom(addressList[i]);
         }
     }
 
@@ -401,36 +414,12 @@ contract BobbyFischer is
         _unpause();
     }
 
-    function _reveal() internal {
-        revealed = true;
-    }
-
     function updateBaseURI(string memory _newBaseURI)
         public
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         _reveal();
         _setBaseURI(_newBaseURI);
-    }
-
-    /// @dev Add users to whitelist
-    function whitelistUsers(address[] memory _users, uint8[] memory _tier)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        for (uint256 i = 0; i < _users.length; i++) {
-            whitelistedAddresses[_users[i]] = Whitelist(_tier[i], _tier[i]);
-        }
-    }
-
-    /// @dev Add users to whitelist
-    function whitelistPartners(address[] memory _users)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        for (uint256 i = 0; i < _users.length; i++) {
-            whitelistedPartners[_users[i]] = true;
-        }
     }
 
     /// @dev Emergency Function to withdraw ETH from this contract
@@ -455,7 +444,11 @@ contract BobbyFischer is
         PUBLIC_SALE_START = _startTime;
     }
 
-    // -------------------------- INTERNAL OVERRIDES -----------------------------
+    // -------------------------- INTERNAL FUNCTIONS -----------------------------
+
+    function _reveal() internal {
+        revealed = true;
+    }
 
     function _beforeTokenTransfer(
         address from,
@@ -466,6 +459,21 @@ contract BobbyFischer is
     }
 
     // ------------------------- PRIVATE FUNCTIONS ------------------------------
+
+    /// @dev Checks if the the signature is signed by a valid signer
+    function isSignedBySigner(
+        address sender,
+        bytes memory nonce,
+        bytes memory signature,
+        address _signerAddress,
+        uint256 mintAmount,
+        uint256 tier
+    ) private pure returns (bool) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(sender, nonce, mintAmount, tier)
+        );
+        return _signerAddress == hash.recover(signature);
+    }
 
     function supportsInterface(bytes4 interfaceId)
         public
@@ -488,5 +496,14 @@ contract BobbyFischer is
         require(index < available.length);
         available[index] = available[available.length - 1];
         available.pop();
+    }
+
+    function getAvailable()
+        public
+        view
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (uint32[] memory)
+    {
+        return available;
     }
 }

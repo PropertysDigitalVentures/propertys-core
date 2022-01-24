@@ -16,7 +16,7 @@ describe("ERC1155", function () {
   const initialURI = "https://token-cdn-domain/{id}.json";
 
   before(async function () {
-    // Get Fixture of Questing and Uninterested Unicorns
+    // Get Fixture of Questing and
     await deployments.fixture(["PropertyNFT"]);
   });
 
