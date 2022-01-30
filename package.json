@@ -1,7 +1,7 @@
 {
   "name": "property-nft",
   "version": "1.0.0",
-  "description": "",
+  "description": "## Launch Checklist",
   "main": "index.js",
   "scripts": {
     "start-propertyNFT": "npx hardhat node --tags PropertyNFTStealthSettings",
@@ -78,5 +78,17 @@
     "watch-files": [
       "test/**/*.js"
     ]
-  }
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PropertysDigitalVentures/propertys-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PropertysDigitalVentures/propertys-core/issues"
+  },
+  "homepage": "https://github.com/PropertysDigitalVentures/propertys-core#readme"
 }
