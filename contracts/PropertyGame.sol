@@ -16,43 +16,39 @@ contract PropertyGame is
     uint256 startTime;
     // claim windows
     uint256 claimWindow = 3 days;
+    // Round Duration
+    uint256 roundDuration = 30 days;
     // when claimPeriod is active or not
     bool isClaimPeriod;
     // round end time
     uint256 roundEndTime;
 
-
-// EXAMPLE 1: Pure Street until City — Beige Bay: 
-// 1x House = 10 $BRIX
-// 1x Pure Street: 7x10 $BRIX + 300 $BRIX (Street Bonus) = 370 $BRIX
-// 1x District: 3x 370 $BRIX + 500 $BRIX (District Bonus) = 1610 $BRIX
-// 1x City: 5x 1610 $BRIX + 1000 $BRIX (City Bonus) = 9050 $BRIX
+    // EXAMPLE 1: Pure Street until City — Beige Bay:
+    // 1x House = 10 $BRIX
+    // 1x Pure Street: 7x10 $BRIX + 300 $BRIX (Street Bonus) = 370 $BRIX
+    // 1x District: 3x 370 $BRIX + 500 $BRIX (District Bonus) = 1610 $BRIX
+    // 1x City: 5x 1610 $BRIX + 1000 $BRIX (City Bonus) = 9050 $BRIX
 
     // reward emmittion rate per 30 days
-    uint HouseRewards = 10;
-    uint Streetreward = 70;
-    uint DistrictRewards = 370;
-    uint CityRewards = 1610;
+    uint256 HouseRewards = 10;
+    uint256 Streetreward = 70;
+    uint256 DistrictRewards = 370;
+    uint256 CityRewards = 1610;
 
     // Bonus rewards
-    uint StreetBonus = 300;
-    uint DistrictBonus = 500;
-    uint CityBonus = 1000;
+    uint256 StreetBonus = 300;
+    uint256 DistrictBonus = 500;
+    uint256 CityBonus = 1000;
 
+    // EXAMPLE 2: Impure Street — Any 7 cards from any 7 cities.
+    // 1x House = 10 $BRIX
+    // 1x Impure Street = 7x Random Houses = 7x10 $BRIX + 150 $BRIX = 220 $BRIX
 
-// EXAMPLE 2: Impure Street — Any 7 cards from any 7 cities.
-// 1x House = 10 $BRIX
-// 1x Impure Street = 7x Random Houses = 7x10 $BRIX + 150 $BRIX = 220 $BRIX
-
-
-// impure Bonus rewards
- uint StreetBonus = 150;
-
-
-    
+    // impure Bonus rewards
+    uint256 ImpureStreetBonus = 150;
 
     // amount of times a token is used to claim
-    mapping(uint256 => uint256) tokenClaim;
+    mapping(uint256 => uint256) tokenClaimed;
 
     IBrickToken public BRICK_TOKEN;
     IPropertyNFT public PROPERTY_NFT;
@@ -61,9 +57,9 @@ contract PropertyGame is
     // Map tokenId to DistrictId
     // Map tokenId to CityId
 
-    mapping (uint => uint) StreetId;
-    mapping (uint => uint) DistrictId;
-    mapping (uint => uint) CityId;
+    mapping(uint256 => uint256) StreetId;
+    mapping(uint256 => uint256) DistrictId;
+    mapping(uint256 => uint256) CityId;
 
     // Street Bonuses
     // District Bonuses
@@ -85,15 +81,12 @@ contract PropertyGame is
         // Calculate District Bonus
         // Calculate City Bonus
     }
+
     /// @dev Calculate reward base on token
 
-           // Caluclate Street 
-        // Calculate District 
-        // Calculate City 
-
-
-
-
+    // Caluclate Street
+    // Calculate District
+    // Calculate City
 
     /// @dev Caluclate Street Bonus
 
@@ -112,18 +105,24 @@ contract PropertyGame is
     }
 
     /// @dev calculate current Round
+    function getCurrentRound() public view returns (uint256 currentRound) {
+        uint256 timeElapse = block.timestamp - startTime;
+        currentRound = (timeElapse % roundDuration) + 1;
+    }
 
-    function getCurrentRound() public returns (uint256) {
-        startTime = block.timestamp;
-        uint timeElapse;
-       timeElapse = block.timestamp - startTime;
+    function setStartTime(uint256 _startTime) public {
+        startTime = _startTime;
     }
 
     /// @dev claim token
-    function claim(uint256[] _tokenId) public {
-       // IERC721(PROPERTY_NFT).parsePostalCode()
+    function claim(uint256[] memory _tokenId) public {
+        // IERC721(PROPERTY_NFT).parsePostalCode()
+        // TODO: Require token to be owned by owner
         for (uint256 i = 0; i < _tokenId.length; i++) {
-            require(tokenClaimed[i] < getCurrentRound(), "Reward has been claimed for this token");
+            require(
+                tokenClaimed[i] < getCurrentRound(),
+                "Reward has been claimed for this token"
+            );
             tokenClaimed[i] += 1;
         }
     }
