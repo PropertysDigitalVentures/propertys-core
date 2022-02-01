@@ -116,9 +116,13 @@ contract PropertyGame is
 
     /// @dev claim token
     function claim(uint256[] memory _tokenId) public {
-        // IERC721(PROPERTY_NFT).parsePostalCode()
-        // TODO: Require token to be owned by owner
+
         for (uint256 i = 0; i < _tokenId.length; i++) {
+       bytes[] PostalCode =  IERC721(PROPERTY_NFT).getPostalCode(_tokenId[i]);
+      IERC721(PROPERTY_NFT).parsePostalCode(PostaCode[i]);
+      IERC721(PROPERTY_NFT).getPostalCode(_tokenId[i]) == IERC721(PROPERTY_NFT).balanceOf(msg.sender);
+        // TODO: Require token to be owned by owner
+        
             require(
                 tokenClaimed[i] < getCurrentRound(),
                 "Reward has been claimed for this token"

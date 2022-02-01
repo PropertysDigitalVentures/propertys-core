@@ -83,10 +83,7 @@
     "doc": "docs",
     "test": "test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/PropertysDigitalVentures/propertys-core.git"
-  },
+  "repository": "git+https://github.com/PropertysDigitalVentures/propertys-core.git",
   "bugs": {
     "url": "https://github.com/PropertysDigitalVentures/propertys-core/issues"
   },
