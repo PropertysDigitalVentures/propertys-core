@@ -83,6 +83,30 @@ contract PropertyGame is
     }
 
     /// @dev Calculate reward base on token
+    function streetReward(address _owner) internal returns(bool){
+       uint[] tokenId = IERC721(PROPERTY_NFT).walletOfOwner(msg.sender);
+       bytes[] postalCode;
+       bytes[] postCode;
+        for (uint256 i; i < tokenId.length; i++) {
+            postalCode[i] = IERC721(PROPERTY_NFT).getPostalCode(tokenId[i]);
+            bytes[i] hashId = abi.encodePacked(IERC721(PROPERTY_NFT).parsePostalCode(postalCode[i] ));
+        }
+        for (int256 i = 0; i < hashId.length; i++) {
+            for (int256 k = 0; k < hashId.length; k++) {
+                if (hashId[i] == hashId[k]) {
+                    postCode.push(hashId[i]);
+                    require(postCode.length ==7 );
+                }
+            }
+        }
+        return Streetreward ;
+     }
+
+    function DestrictReward() internal {
+
+    }
+
+    function CityReward() internal {}
 
     // Caluclate Street
     // Calculate District
@@ -106,28 +130,32 @@ contract PropertyGame is
 
     /// @dev calculate current Round
     function getCurrentRound() public view returns (uint256 currentRound) {
-        uint256 timeElapse = block.timestamp - startTime;
+        uint256 timeElapse =  startTime - block.timestamp ;
         currentRound = (timeElapse % roundDuration) + 1;
     }
 
-    function setStartTime(uint256 _startTime) public {
-        startTime = _startTime;
+    function setStartTime() public {
+        startTime = block.timestamp;
     }
 
     /// @dev claim token
     function claim(uint256[] memory _tokenId) public {
-
         for (uint256 i = 0; i < _tokenId.length; i++) {
-       bytes[] PostalCode =  IERC721(PROPERTY_NFT).getPostalCode(_tokenId[i]);
-      IERC721(PROPERTY_NFT).parsePostalCode(PostaCode[i]);
-      IERC721(PROPERTY_NFT).getPostalCode(_tokenId[i]) == IERC721(PROPERTY_NFT).balanceOf(msg.sender);
-        // TODO: Require token to be owned by owner
-        
+            bytes[] PostalCode = IERC721(PROPERTY_NFT).getPostalCode(
+                _tokenId[i]
+            );
+            IERC721(PROPERTY_NFT).parsePostalCode(PostaCode[i]);
+            IERC721(PROPERTY_NFT).getPostalCode(_tokenId[i]) ==
+                IERC721(PROPERTY_NFT).walletOfOwner(msg.sender);
+            // TODO: Require token to be owned by owner
+
             require(
                 tokenClaimed[i] < getCurrentRound(),
                 "Reward has been claimed for this token"
             );
             tokenClaimed[i] += 1;
         }
+
+        //_safeMint(_to, reward);
     }
 }
